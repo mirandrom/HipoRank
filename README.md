@@ -1,2 +1,2 @@
 # HipoRank
-Unsupervised long document extractive summarization with hierarchichal and positional biases
+Unsupervised and extractive long document summarization with **Hi**erarchichal and **Po**sitional biases
