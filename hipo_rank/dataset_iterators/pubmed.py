@@ -22,6 +22,8 @@ class PubmedDataset(object):
     def __init__(self, file_path, no_sections: bool = False):
         self._file_path = file_path
         self.no_sections = no_sections
+        self.docs = [PubmedDoc(**json.loads(l)) for l in Path(self._file_path).read_text().split("\n") if l]
+        self.docs = [d for d in self.docs if not all([s == [''] for s in d.sections])]
 
     def _get_sections(self, doc: PubmedDoc) -> List[Section]:
         if self.no_sections:
@@ -45,11 +47,19 @@ class PubmedDataset(object):
         return [s.replace("<S>", "").replace("<S\>", "") for s in doc.abstract_text]
 
     def __iter__(self) -> Iterator[Document]:
-        docs = [PubmedDoc(**json.loads(l)) for l in Path(self._file_path).read_text().split("\n") if l]
-        for doc in docs:
+        for doc in self.docs:
             sections = self._get_sections(doc)
             reference = self._get_reference(doc)
             yield Document(sections=sections, reference=reference)
 
-
-
+    def __getitem__(self, i):
+        if isinstance(i, int):
+            doc = self.docs[i]
+            sections = self._get_sections(doc)
+            reference = self._get_reference(doc)
+            return Document(sections=sections, reference=reference)
+        elif isinstance(i, slice):
+            docs = self.docs[i]
+            sections = [self._get_sections(doc) for doc in docs]
+            references = [self._get_reference(doc) for doc in docs]
+            return [Document(sections=s, reference=r) for s,r in zip(sections, references)]
