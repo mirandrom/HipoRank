@@ -1,0 +1,6 @@
+gensim
+numpy
+dataclasses
+pyrouge
+torch
+transformers
