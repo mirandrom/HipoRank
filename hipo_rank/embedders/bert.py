@@ -10,7 +10,9 @@ from typing import List
 class BertEmbedder:
     def __init__(self, bert_config_path: str, bert_model_path: str,
                  bert_tokenizer: str = "bert-base-cased",
-                 bert_pretrained: str = None):
+                 bert_pretrained: str = None,
+                 max_seq_len: int = 60):
+        self.max_seq_len = max_seq_len
         if bert_pretrained:
             self.bert_model = BertModel.from_pretrained(bert_pretrained)
             self.bert_tokenizer = BertTokenizer.from_pretrained(bert_pretrained)
@@ -36,11 +38,11 @@ class BertEmbedder:
     def _get_sentences_embedding(self, sentences: List[str]) -> ndarray:
         # TODO: clean up batch approach
         input_ids = [self.bert_tokenizer.encode(s, add_special_tokens=True) for s in sentences]
-        padded_len = min(max([len(x) for x in input_ids]), 512)
+        padded_len = min(max([len(x) for x in input_ids]), self.max_seq_len)
         batch_size = len(input_ids)
         input_tensor = np.zeros((batch_size, padded_len))
         for i,x in enumerate(input_ids):
-            input_tensor[i][:len(x)] = x
+            input_tensor[i][:padded_len] = x[:padded_len]
         input_tensor = torch.LongTensor(input_tensor)
         # Original pacsum paper uses [CLS] next sentence prediction activations
         # this isn't optimal and should be changed for potentially better performance
