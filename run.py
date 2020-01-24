@@ -29,7 +29,7 @@ DATASETS = [
 ]
 EMBEDDERS = [
     ("biomed_w2v", W2VEmbedder, {"bin_path": "models/wikipedia-pubmed-and-PMC-w2v.bin"}),
-    ("rand_200", RandEmbedder, {"dim": 10}),
+    ("rand_200", RandEmbedder, {"dim": 200}),
     ("biobert", BertEmbedder,
      {"bert_config_path": "models/biobert_v1.1_pubmed/bert_config.json",
       "bert_model_path": "models/biobert_v1.1_pubmed/pytorch_model.bin",
@@ -63,12 +63,12 @@ experiment_time = int(time.time())
 results_path = Path(f"results/{experiment_time}")
 results_path.mkdir(parents=True, exist_ok=True)
 
+
 for embedder_id, embedder, embedder_args in EMBEDDERS:
     Embedder = embedder(**embedder_args)
     print("loaded embedder ", embedder_id)
     for dataset_id, dataset, dataset_args in DATASETS:
         DataSet = dataset(**dataset_args)
-        DataSet = [d for _,d in zip(range(3), DataSet)]
         print("loaded dataset ", dataset_id)
         for similarity_id, similarity, similarity_args in SIMILARITIES:
             Similarity = similarity(**similarity_args)
@@ -82,7 +82,7 @@ for embedder_id, embedder, embedder_args in EMBEDDERS:
                     experiment = f"{dataset_id}-{embedder_id}-{similarity_id}-{direction_id}-{scorer_id}"
                     results = []
                     try:
-                        for doc in DataSet:
+                        for doc in tqdm(DataSet):
                             embeds = Embedder.get_embeddings(doc)
                             sims = Similarity.get_similarities(embeds)
                             scores = Scorer.get_scores(sims)
@@ -99,5 +99,6 @@ for embedder_id, embedder, embedder_args in EMBEDDERS:
 
                     except Exception as e:
                         print("[EXCEPTION] for ", experiment)
+                        print(doc)
                         print(e)
 
