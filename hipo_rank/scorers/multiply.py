@@ -30,16 +30,17 @@ class MultiplyScorer:
             pids = sent_to_sent.pair_indices
             dirs = sent_to_sent.directions
             sims = sent_to_sent.similarities
+            num_sents = len(scores[sect_index])
             for ((i,j), dir, sim) in zip(pids, dirs, sims):
                 if dir == "forward":
-                    scores[sect_index][i] += self.forward_sent_to_sent_weight * sim
-                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim
+                    scores[sect_index][i] += self.forward_sent_to_sent_weight * sim / num_sents
+                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim / num_sents
                 elif dir == "backward":
-                    scores[sect_index][j] += self.forward_sent_to_sent_weight * sim
-                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim
+                    scores[sect_index][j] += self.forward_sent_to_sent_weight * sim / num_sents
+                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim / num_sents
                 else:
-                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim
-                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim
+                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim / num_sents
+                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim / num_sents
 
         # get sect_to_sect scores
         sect_scores = np.array([0.0 for _ in scores])
@@ -47,20 +48,18 @@ class MultiplyScorer:
         pids = sect_to_sect.pair_indices
         dirs = sect_to_sect.directions
         sims = sect_to_sect.similarities
+        num_sects = len(scores)
         for ((i, j), dir, sim) in zip(pids, dirs, sims):
             if dir == "forward":
-                sect_scores[i] += self.forward_sect_to_sect_weight * sim
-                sect_scores[j] += self.backward_sect_to_sect_weight * sim
+                sect_scores[i] += self.forward_sect_to_sect_weight * sim / num_sects
+                sect_scores[j] += self.backward_sect_to_sect_weight * sim / num_sects
             elif dir == "backward":
-                sect_scores[j] += self.forward_sect_to_sect_weight * sim
-                sect_scores[i] += self.backward_sect_to_sect_weight * sim
+                sect_scores[j] += self.forward_sect_to_sect_weight * sim / num_sects
+                sect_scores[i] += self.backward_sect_to_sect_weight * sim / num_sects
             else:
-                sect_scores[j] += self.backward_sect_to_sect_weight * sim
-                sect_scores[i] += self.backward_sect_to_sect_weight * sim
-        # normalize sect_to_sect scores
-        total_sect_scores = sect_scores.sum()
-        if total_sect_scores:
-            sect_scores /= total_sect_scores
+                sect_scores[j] += self.backward_sect_to_sect_weight * sim / num_sects
+                sect_scores[i] += self.backward_sect_to_sect_weight * sim / num_sects
+
         # scale sentence scores by sect_to_sect scores
         for i, score in enumerate(sect_scores):
             scores[i] = [score*s for s in scores[i]]
