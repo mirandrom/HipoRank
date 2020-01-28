@@ -16,7 +16,12 @@ class EdgeBased:
             return "undirected"
 
     def update_directions(self, similarities: Similarities) -> Similarities:
-        num_nodes = max([x[1] for x in similarities.sect_to_sect.pair_indices]) + 1
+        # handle single section cases
+        if len(similarities.sect_to_sect.pair_indices):
+            num_nodes = max([x[1] for x in similarities.sect_to_sect.pair_indices]) + 1
+        else:
+            num_nodes = 1
+
         sect_directions = [self._get_direction(*x, num_nodes) for x in similarities.sect_to_sect.pair_indices]
         similarities.sect_to_sect.directions = sect_directions
 
@@ -25,7 +30,8 @@ class EdgeBased:
             similarities.sent_to_sect[sect1_index].directions = [self._get_direction(sect1_index, s2i, num_nodes) for s2i in sect2_indices]
 
         for i, sent_sims in enumerate(similarities.sent_to_sent):
-            num_nodes = max([x[1] for x in sent_sims.pair_indices]) + 1
-            similarities.sent_to_sent[i].directions = [self._get_direction(*x, num_nodes) for x in sent_sims.pair_indices]
+            if len(sent_sims.pair_indices):
+                num_nodes = max([x[1] for x in sent_sims.pair_indices]) + 1
+                similarities.sent_to_sent[i].directions = [self._get_direction(*x, num_nodes) for x in sent_sims.pair_indices]
 
         return similarities
