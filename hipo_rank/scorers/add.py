@@ -29,27 +29,29 @@ class AddScorer:
             pids = sent_to_sent.pair_indices
             dirs = sent_to_sent.directions
             sims = sent_to_sent.similarities
+            num_sents = len(scores[sect_index])
             for ((i,j), dir, sim) in zip(pids, dirs, sims):
                 if dir == "forward":
-                    scores[sect_index][i] += self.forward_sent_to_sent_weight * sim
-                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim
+                    scores[sect_index][i] += self.forward_sent_to_sent_weight * sim / num_sents
+                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim / num_sents
                 elif dir == "backward":
-                    scores[sect_index][j] += self.forward_sent_to_sent_weight * sim
-                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim
+                    scores[sect_index][j] += self.forward_sent_to_sent_weight * sim / num_sents
+                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim / num_sents
                 else:
-                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim
-                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim
+                    scores[sect_index][j] += self.backward_sent_to_sent_weight * sim / num_sents
+                    scores[sect_index][i] += self.backward_sent_to_sent_weight * sim / num_sents
 
         # add sent_to_sect scores
         for sect_index, sent_to_sect in enumerate(similarities.sent_to_sect):
             pids = sent_to_sect.pair_indices
             dirs = sent_to_sect.directions
             sims = sent_to_sect.similarities
+            num_sects = len(similarities.sent_to_sect)
             for ((i,j), dir, sim) in zip(pids, dirs, sims):
                 if dir == "forward":
-                    scores[sect_index][i] += self.forward_sent_to_sect_weight * sim
+                    scores[sect_index][i] += self.forward_sent_to_sect_weight * sim / num_sects
                 elif dir == "backward" or dir == "undirected":
-                    scores[sect_index][i] += self.backward_sent_to_sect_weight * sim
+                    scores[sect_index][i] += self.backward_sent_to_sect_weight * sim / num_sects
 
         ranked_scores = []
         sect_global_idx = 0
