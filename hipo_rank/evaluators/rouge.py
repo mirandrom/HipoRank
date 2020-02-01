@@ -1,10 +1,11 @@
 from pyrouge import Rouge155
 import os, shutil, random, string
+from pathlib import Path
 
 from hipo_rank import Summary, Document, Reference
 from typing import List
 
-def evaluate_rouge(summaries: List[List[str]], references: List[List[List[str]]], remove_temp=False, rouge_args=[]):
+def evaluate_rouge(summaries: List[List[str]], references: List[List[List[str]]], remove_temp=True, rouge_args=[]):
     '''
     Taken from original pacsum repository
 
@@ -47,12 +48,14 @@ def evaluate_rouge(summaries: List[List[str]], references: List[List[List[str]]]
     #rouge_args = '-c 95 -2 -1 -U -r 1000 -n 4 -w 1.2 -a'
     #output = rouge.convert_and_evaluate(rouge_args=rouge_args)
     output = rouge.convert_and_evaluate()
+    output_dir = Path(rouge._model_dir).parent
 
     r = rouge.output_to_dict(output)
     print(output)
     #print(r)
 
     # remove the created temporary files
-    #if remove_temp:
-    #    shutil.rmtree(temp_dir)
+    if remove_temp:
+        shutil.rmtree(output_dir)
+       shutil.rmtree(temp_dir)
     return r
