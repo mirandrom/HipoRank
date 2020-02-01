@@ -57,5 +57,5 @@ def evaluate_rouge(summaries: List[List[str]], references: List[List[List[str]]]
     # remove the created temporary files
     if remove_temp:
         shutil.rmtree(output_dir)
-       shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir)
     return r
