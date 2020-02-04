@@ -18,6 +18,10 @@ class BertEmbedder:
         if bert_pretrained:
             self.bert_model = BertModel.from_pretrained(bert_pretrained)
             self.bert_tokenizer = BertTokenizer.from_pretrained(bert_pretrained)
+            if cuda:
+                self.bert_model.cuda()
+                self.bert_model.eval()
+
         else:
             self.bert_model = self._load_bert(bert_config_path, bert_model_path)
             self.bert_tokenizer = BertTokenizer.from_pretrained(bert_tokenizer)
@@ -35,6 +39,11 @@ class BertEmbedder:
                 model_states[k[5:]] = model_states.pop(k)
             elif k.startswith("cls"):
                 _ = model_states.pop(k)
+
+            if k[-4:] == "beta":
+                model_states[k[:-4]+"bias"] = model_states.pop(k)
+            if k[-5:] == "gamma":
+                model_states[k[:-5]+"weight"] = model_states.pop(k)
 
         model.load_state_dict(model_states)
         if self.cuda:

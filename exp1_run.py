@@ -21,6 +21,8 @@ import json
 import time
 from tqdm import tqdm
 
+DEBUG = True
+
 DATASETS = [
     ("pubmed_val", PubmedDataset, {"file_path": "data/pubmed-release/val.txt"}),
     ("pubmed_val_no_sections", PubmedDataset,
@@ -28,8 +30,8 @@ DATASETS = [
      ),
 ]
 EMBEDDERS = [
-    ("biomed_w2v", W2VEmbedder, {"bin_path": "models/wikipedia-pubmed-and-PMC-w2v.bin"}),
     ("rand_200", RandEmbedder, {"dim": 200}),
+    ("biomed_w2v", W2VEmbedder,{"bin_path": "models/wikipedia-pubmed-and-PMC-w2v.bin"}),
     ("biobert", BertEmbedder,
      {"bert_config_path": "models/biobert_v1.1_pubmed/bert_config.json",
       "bert_model_path": "models/biobert_v1.1_pubmed/pytorch_model.bin",
@@ -41,6 +43,13 @@ EMBEDDERS = [
       "bert_tokenizer": "bert-base-cased",
       "bert_pretrained": "bert-base-cased"}
      ),
+    ("pacsum_bert", BertEmbedder,
+     {"bert_config_path": "models/pacssum_models/bert_config.json",
+      "bert_model_path": "models/pacssum_models/pytorch_model_finetuned.bin",
+      "bert_tokenizer": "bert-base-uncased",
+      "cuda": False
+      }
+    ),
 ]
 SIMILARITIES = [
     ("cos", CosSimilarity, {}),
@@ -77,6 +86,8 @@ for embedder_id, embedder, embedder_args in EMBEDDERS:
     for dataset_id, dataset, dataset_args in DATASETS:
         DataSet = dataset(**dataset_args)
         docs = list(DataSet)
+        if DEBUG:
+            docs = docs[:5]
         print(f"embedding dataset {dataset_id} with {embedder_id}")
         embeds = [Embedder.get_embeddings(doc) for doc in tqdm(docs)]
         for similarity_id, similarity, similarity_args in SIMILARITIES:
@@ -97,24 +108,29 @@ for embedder_id, embedder, embedder_args in EMBEDDERS:
                 for scorer_id, scorer, scorer_args in SCORERS_FILTERED:
                     Scorer = scorer(**scorer_args)
                     experiment = f"{dataset_id}-{embedder_id}-{similarity_id}-{direction_id}-{scorer_id}"
-                    print("running experiment: ", experiment)
-                    results = []
-                    references = []
-                    summaries = []
-                    for sim, doc in zip(sims, docs):
-                        scores = Scorer.get_scores(sim)
-                        summary = Summarizer.get_summary(doc, scores)
-                        results.append({
-                            "num_sects": len(doc.sections),
-                            "num_sents": sum([len(s.sentences) for s in doc.sections]),
-                            "summary": summary,
-
-                        })
-                        summaries.append([s[0] for s in summary])
-                        references.append([doc.reference])
-                    rouge_result = evaluate_rouge(summaries, references)
                     experiment_path = results_path / experiment
-                    experiment_path.mkdir(parents=True, exist_ok=True)
-                    (experiment_path / "rouge_results.json").write_text(json.dumps(rouge_result, indent=2))
-                    (experiment_path / "summaries.json").write_text(json.dumps(results, indent=2))
+                    try:
+                        experiment_path.mkdir(parents=True)
+
+                        print("running experiment: ", experiment)
+                        results = []
+                        references = []
+                        summaries = []
+                        for sim, doc in zip(sims, docs):
+                            scores = Scorer.get_scores(sim)
+                            summary = Summarizer.get_summary(doc, scores)
+                            results.append({
+                                "num_sects": len(doc.sections),
+                                "num_sents": sum([len(s.sentences) for s in doc.sections]),
+                                "summary": summary,
+
+                            })
+                            summaries.append([s[0] for s in summary])
+                            references.append([doc.reference])
+                        rouge_result = evaluate_rouge(summaries, references)
+                        (experiment_path / "rouge_results.json").write_text(json.dumps(rouge_result, indent=2))
+                        (experiment_path / "summaries.json").write_text(json.dumps(results, indent=2))
+                    except FileExistsError:
+                        print(f"{experiment} already exists, skipping...")
+                        pass
 
