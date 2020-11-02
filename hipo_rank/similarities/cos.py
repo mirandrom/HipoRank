@@ -8,11 +8,15 @@ from numpy import ndarray
 
 
 class CosSimilarity:
+    def __init__(self, threshold = 0):
+        self.threshold = threshold
+
     def _compute_similarities(self, embeds1: ndarray, embeds2: ndarray) -> ndarray:
         embeds1 = torch.from_numpy(embeds1)
         embeds2 = torch.from_numpy(embeds2)
         similarities = torch.cosine_similarity(embeds1, embeds2).numpy()
         similarities = similarities / 2 + 0.5 # normalize to a range [0,1]
+        similarities = np.clip(similarities, self.threshold, 1)
         return similarities
 
     def _get_pairwise_similarities(self, embeds: ndarray) -> Tuple[ndarray, PairIndices]:
