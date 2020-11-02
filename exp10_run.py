@@ -1,18 +1,15 @@
 from hipo_rank.dataset_iterators.pubmed import PubmedDataset
 
-from hipo_rank.embedders.w2v import W2VEmbedder
-from hipo_rank.embedders.rand import RandEmbedder
 from hipo_rank.embedders.bert import BertEmbedder
+from hipo_rank.embedders.rand import RandEmbedder
 from hipo_rank.embedders.sent_transformers import SentTransformersEmbedder
 
 from hipo_rank.similarities.cos import CosSimilarity
 
-from hipo_rank.directions.undirected import Undirected
-from hipo_rank.directions.order import OrderBased
 from hipo_rank.directions.edge import EdgeBased
+from hipo_rank.directions.order import OrderBased
 
 from hipo_rank.scorers.add import AddScorer
-from hipo_rank.scorers.multiply import MultiplyScorer
 
 from hipo_rank.summarizers.default import DefaultSummarizer
 from hipo_rank.evaluators.rouge import evaluate_rouge
@@ -22,30 +19,26 @@ import json
 import time
 from tqdm import tqdm
 
+"""
+hiporank with short sentences removed (<5 words) for arxiv
+"""
+
 DEBUG = False
 
-# PubMed hyperparameter gridsearch and ablation study
-
 DATASETS = [
-    ("pubmed_val", PubmedDataset, {"file_path": "data/pubmed-release/val.txt"}),
-    ("pubmed_val_no_sections", PubmedDataset,
-     {"file_path": "data/pubmed-release/val.txt", "no_sections": True}
+    ("pubmed_test", PubmedDataset,
+     {"file_path": "data/pubmed-release/test.txt", "min_sent_len": 5}
      ),
+    ("arxiv_test", PubmedDataset,
+     {"file_path": "data/arxiv-release/test.txt", "min_sent_len": 5}
+     ),
+    ("arxiv_test_nosections", PubmedDataset,
+     {"file_path": "data/arxiv-release/test.txt", "min_sent_len": 5, "no_sections": True}
+     ),
+
 ]
 EMBEDDERS = [
     ("rand_200", RandEmbedder, {"dim": 200}),
-    ("biomed_w2v", W2VEmbedder,{"bin_path": "models/wikipedia-pubmed-and-PMC-w2v.bin"}),
-    ("biobert", BertEmbedder,
-     {"bert_config_path": "models/biobert_v1.1_pubmed/bert_config.json",
-      "bert_model_path": "models/biobert_v1.1_pubmed/pytorch_model.bin",
-      "bert_tokenizer": "bert-base-cased"}
-     ),
-    ("bert", BertEmbedder,
-     {"bert_config_path": "",
-      "bert_model_path": "",
-      "bert_tokenizer": "bert-base-cased",
-      "bert_pretrained": "bert-base-cased"}
-     ),
     ("pacsum_bert", BertEmbedder,
      {"bert_config_path": "models/pacssum_models/bert_config.json",
       "bert_model_path": "models/pacssum_models/pytorch_model_finetuned.bin",
@@ -60,39 +53,27 @@ EMBEDDERS = [
         ),
 ]
 SIMILARITIES = [
-    ("cos", CosSimilarity, {}),
+    ("cos", CosSimilarity, {"threshold": 0.3}),
 ]
 DIRECTIONS = [
-    ("undirected", Undirected, {}),
-    ("order", OrderBased, {}),
     ("edge", EdgeBased, {}),
-    ("backloaded_edge", EdgeBased, {"u": 0.8}),
-    ("frontloaded_edge", EdgeBased, {"u": 1.2}),
+    ("order", OrderBased, {}),
 ]
 
 SCORERS = [
     ("add_f=0.0_b=1.0_s=1.0", AddScorer, {}),
-    ("add_f=0.0_b=1.0_s=1.5", AddScorer, {"section_weight": 1.5}),
-    ("add_f=0.0_b=1.0_s=0.5", AddScorer, {"section_weight": 0.5}),
-    ("add_f=-0.2_b=1.0_s=1.0", AddScorer, {"forward_weight":-0.2}),
-    ("add_f=-0.2_b=1.0_s=1.5", AddScorer, {"forward_weight":-0.2, "section_weight": 1.5}),
-    ("add_f=-0.2_b=1.0_s=0.5", AddScorer, {"forward_weight":-0.2,"section_weight": 0.5}),
-    ("add_f=0.5_b=1.0_s=1.0", AddScorer, {"forward_weight":0.5}),
-    ("add_f=0.5_b=1.0_s=1.5", AddScorer, {"forward_weight":0.5, "section_weight": 1.5}),
-    ("add_f=0.5_b=1.0_s=0.5", AddScorer, {"forward_weight":0.5,"section_weight": 0.5}),
-    ("multiply", MultiplyScorer, {}),
 ]
 
 
-Summarizer = DefaultSummarizer()
+
+SUMMARIZERS = [DefaultSummarizer(num_words=200)]
 
 experiment_time = int(time.time())
-# results_path = Path(f"results/{experiment_time}")
-results_path = Path(f"results/exp1")
+results_path = Path(f"results/exp10")
 
 for embedder_id, embedder, embedder_args in EMBEDDERS:
     Embedder = embedder(**embedder_args)
-    for dataset_id, dataset, dataset_args in DATASETS:
+    for Summarizer, (dataset_id, dataset, dataset_args) in zip(SUMMARIZERS, DATASETS):
         DataSet = dataset(**dataset_args)
         docs = list(DataSet)
         if DEBUG:

@@ -1,18 +1,15 @@
 from hipo_rank.dataset_iterators.pubmed import PubmedDataset
 
-from hipo_rank.embedders.w2v import W2VEmbedder
-from hipo_rank.embedders.rand import RandEmbedder
 from hipo_rank.embedders.bert import BertEmbedder
+from hipo_rank.embedders.rand import RandEmbedder
 from hipo_rank.embedders.sent_transformers import SentTransformersEmbedder
 
 from hipo_rank.similarities.cos import CosSimilarity
 
-from hipo_rank.directions.undirected import Undirected
-from hipo_rank.directions.order import OrderBased
 from hipo_rank.directions.edge import EdgeBased
+from hipo_rank.directions.order import OrderBased
 
 from hipo_rank.scorers.add import AddScorer
-from hipo_rank.scorers.multiply import MultiplyScorer
 
 from hipo_rank.summarizers.default import DefaultSummarizer
 from hipo_rank.evaluators.rouge import evaluate_rouge
@@ -22,73 +19,81 @@ import json
 import time
 from tqdm import tqdm
 
+"""
+Effect of document length
+"""
+
 DEBUG = False
 
-# PubMed hyperparameter gridsearch and ablation study
-
 DATASETS = [
-    ("pubmed_val", PubmedDataset, {"file_path": "data/pubmed-release/val.txt"}),
-    ("pubmed_val_no_sections", PubmedDataset,
-     {"file_path": "data/pubmed-release/val.txt", "no_sections": True}
+    ("arxiv_nosections_test_0_3000",
+     PubmedDataset, {"file_path": "data/arxiv-release/test.txt",
+                     "max_words": 3000,
+                     "no_sections": True}
      ),
+    ("arxiv_nosections_test_3000_6000",
+     PubmedDataset, {"file_path": "data/arxiv-release/test.txt",
+                     "min_words": 3000, "max_words": 6000,
+                     "no_sections": True}
+     ),
+    ("arxiv_nosections_test_6000_9000",
+     PubmedDataset, {"file_path": "data/arxiv-release/test.txt",
+                     "min_words": 6000, "max_words": 9000,
+                     "no_sections": True}
+     ),
+    ("arxiv_nosections_test_9000_0",
+     PubmedDataset, {"file_path": "data/arxiv-release/test.txt",
+                     "min_words": 9000,
+                     "no_sections": True}
+     ),
+    ("pubmed_nosections_test_0_2000",
+     PubmedDataset, {"file_path": "data/pubmed-release/test.txt",
+                     "max_words": 2000,
+                     "no_sections": True}
+     ),
+    ("pubmed_nosections_test_2000_4000",
+     PubmedDataset, {"file_path": "data/pubmed-release/test.txt",
+                     "min_words": 2000, "max_words": 4000,
+                     "no_sections": True}
+     ),
+    ("pubmed_nosections_test_4000_6000",
+     PubmedDataset, {"file_path": "data/pubmed-release/test.txt",
+                     "min_words": 4000, "max_words": 6000,
+                     "no_sections": True}
+     ),
+    ("pubmed_nosections_test_6000_0",
+     PubmedDataset, {"file_path": "data/pubmed-release/test.txt",
+                     "min_words": 6000,
+                     "no_sections": True}
+     ),
+        
 ]
 EMBEDDERS = [
     ("rand_200", RandEmbedder, {"dim": 200}),
-    ("biomed_w2v", W2VEmbedder,{"bin_path": "models/wikipedia-pubmed-and-PMC-w2v.bin"}),
-    ("biobert", BertEmbedder,
-     {"bert_config_path": "models/biobert_v1.1_pubmed/bert_config.json",
-      "bert_model_path": "models/biobert_v1.1_pubmed/pytorch_model.bin",
-      "bert_tokenizer": "bert-base-cased"}
-     ),
-    ("bert", BertEmbedder,
-     {"bert_config_path": "",
-      "bert_model_path": "",
-      "bert_tokenizer": "bert-base-cased",
-      "bert_pretrained": "bert-base-cased"}
-     ),
     ("pacsum_bert", BertEmbedder,
      {"bert_config_path": "models/pacssum_models/bert_config.json",
       "bert_model_path": "models/pacssum_models/pytorch_model_finetuned.bin",
       "bert_tokenizer": "bert-base-uncased",
       }
-    ),
-    ("st_bert_base", SentTransformersEmbedder,
-         {"model": "bert-base-nli-mean-tokens"}
-        ),
-    ("st_roberta_large", SentTransformersEmbedder,
-         {"model": "roberta-large-nli-mean-tokens"}
-        ),
+     )
 ]
 SIMILARITIES = [
     ("cos", CosSimilarity, {}),
 ]
 DIRECTIONS = [
-    ("undirected", Undirected, {}),
-    ("order", OrderBased, {}),
     ("edge", EdgeBased, {}),
-    ("backloaded_edge", EdgeBased, {"u": 0.8}),
-    ("frontloaded_edge", EdgeBased, {"u": 1.2}),
+    ("order", OrderBased, {}),
+
 ]
 
 SCORERS = [
-    ("add_f=0.0_b=1.0_s=1.0", AddScorer, {}),
-    ("add_f=0.0_b=1.0_s=1.5", AddScorer, {"section_weight": 1.5}),
     ("add_f=0.0_b=1.0_s=0.5", AddScorer, {"section_weight": 0.5}),
-    ("add_f=-0.2_b=1.0_s=1.0", AddScorer, {"forward_weight":-0.2}),
-    ("add_f=-0.2_b=1.0_s=1.5", AddScorer, {"forward_weight":-0.2, "section_weight": 1.5}),
-    ("add_f=-0.2_b=1.0_s=0.5", AddScorer, {"forward_weight":-0.2,"section_weight": 0.5}),
-    ("add_f=0.5_b=1.0_s=1.0", AddScorer, {"forward_weight":0.5}),
-    ("add_f=0.5_b=1.0_s=1.5", AddScorer, {"forward_weight":0.5, "section_weight": 1.5}),
-    ("add_f=0.5_b=1.0_s=0.5", AddScorer, {"forward_weight":0.5,"section_weight": 0.5}),
-    ("multiply", MultiplyScorer, {}),
 ]
 
 
-Summarizer = DefaultSummarizer()
-
 experiment_time = int(time.time())
 # results_path = Path(f"results/{experiment_time}")
-results_path = Path(f"results/exp1")
+results_path = Path(f"results/exp6")
 
 for embedder_id, embedder, embedder_args in EMBEDDERS:
     Embedder = embedder(**embedder_args)
@@ -97,6 +102,12 @@ for embedder_id, embedder, embedder_args in EMBEDDERS:
         docs = list(DataSet)
         if DEBUG:
             docs = docs[:5]
+
+        if dataset_id.startswith("arxiv"):
+            Summarizer = DefaultSummarizer(num_words=220)
+        elif dataset_id.startswith("pubmed"):
+            Summarizer = DefaultSummarizer(num_words=200)
+
         print(f"embedding dataset {dataset_id} with {embedder_id}")
         embeds = [Embedder.get_embeddings(doc) for doc in tqdm(docs)]
         for similarity_id, similarity, similarity_args in SIMILARITIES:

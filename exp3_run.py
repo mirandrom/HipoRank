@@ -22,30 +22,18 @@ import json
 import time
 from tqdm import tqdm
 
+"""
+Test set on pubmed
+"""
+
 DEBUG = False
 
-# PubMed hyperparameter gridsearch and ablation study
-
 DATASETS = [
-    ("pubmed_val", PubmedDataset, {"file_path": "data/pubmed-release/val.txt"}),
-    ("pubmed_val_no_sections", PubmedDataset,
-     {"file_path": "data/pubmed-release/val.txt", "no_sections": True}
-     ),
+    ("pubmed_test", PubmedDataset, {"file_path": "data/pubmed-release/test.txt"}),
 ]
 EMBEDDERS = [
     ("rand_200", RandEmbedder, {"dim": 200}),
     ("biomed_w2v", W2VEmbedder,{"bin_path": "models/wikipedia-pubmed-and-PMC-w2v.bin"}),
-    ("biobert", BertEmbedder,
-     {"bert_config_path": "models/biobert_v1.1_pubmed/bert_config.json",
-      "bert_model_path": "models/biobert_v1.1_pubmed/pytorch_model.bin",
-      "bert_tokenizer": "bert-base-cased"}
-     ),
-    ("bert", BertEmbedder,
-     {"bert_config_path": "",
-      "bert_model_path": "",
-      "bert_tokenizer": "bert-base-cased",
-      "bert_pretrained": "bert-base-cased"}
-     ),
     ("pacsum_bert", BertEmbedder,
      {"bert_config_path": "models/pacssum_models/bert_config.json",
       "bert_model_path": "models/pacssum_models/pytorch_model_finetuned.bin",
@@ -63,32 +51,18 @@ SIMILARITIES = [
     ("cos", CosSimilarity, {}),
 ]
 DIRECTIONS = [
-    ("undirected", Undirected, {}),
-    ("order", OrderBased, {}),
     ("edge", EdgeBased, {}),
-    ("backloaded_edge", EdgeBased, {"u": 0.8}),
-    ("frontloaded_edge", EdgeBased, {"u": 1.2}),
 ]
 
 SCORERS = [
-    ("add_f=0.0_b=1.0_s=1.0", AddScorer, {}),
-    ("add_f=0.0_b=1.0_s=1.5", AddScorer, {"section_weight": 1.5}),
     ("add_f=0.0_b=1.0_s=0.5", AddScorer, {"section_weight": 0.5}),
-    ("add_f=-0.2_b=1.0_s=1.0", AddScorer, {"forward_weight":-0.2}),
-    ("add_f=-0.2_b=1.0_s=1.5", AddScorer, {"forward_weight":-0.2, "section_weight": 1.5}),
-    ("add_f=-0.2_b=1.0_s=0.5", AddScorer, {"forward_weight":-0.2,"section_weight": 0.5}),
-    ("add_f=0.5_b=1.0_s=1.0", AddScorer, {"forward_weight":0.5}),
-    ("add_f=0.5_b=1.0_s=1.5", AddScorer, {"forward_weight":0.5, "section_weight": 1.5}),
-    ("add_f=0.5_b=1.0_s=0.5", AddScorer, {"forward_weight":0.5,"section_weight": 0.5}),
-    ("multiply", MultiplyScorer, {}),
 ]
 
 
 Summarizer = DefaultSummarizer()
 
 experiment_time = int(time.time())
-# results_path = Path(f"results/{experiment_time}")
-results_path = Path(f"results/exp1")
+results_path = Path(f"results/exp3")
 
 for embedder_id, embedder, embedder_args in EMBEDDERS:
     Embedder = embedder(**embedder_args)
