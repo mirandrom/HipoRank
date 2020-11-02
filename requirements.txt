@@ -1,6 +1,9 @@
 gensim
 numpy
 dataclasses
-pyrouge
+pyrouge # perl wrapper for evaluation
+py-rouge # python implementation for oracle summarizer
 torch
 transformers
+sentence-transformers
+summa
