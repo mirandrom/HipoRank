@@ -2,7 +2,7 @@ from collections import Counter
 from pathlib import Path
 import json
 
-from typing import List, Iterator, Any
+from typing import List, Iterator, Any, Optional
 from dataclasses import dataclass
 from hipo_rank import Document, Section
 
@@ -19,11 +19,33 @@ class PubmedDoc:
 
 
 class PubmedDataset(object):
-    def __init__(self, file_path, no_sections: bool = False):
+    def __init__(self,
+                 file_path,
+                 no_sections: bool = False,
+                 min_words: Optional[int] = None,
+                 max_words: Optional[int] = None,
+                 min_sent_len: int = 1 # min num of alphabetical words
+                 ):
         self._file_path = file_path
         self.no_sections = no_sections
-        self.docs = [PubmedDoc(**json.loads(l)) for l in Path(self._file_path).read_text().split("\n") if l]
-        self.docs = [d for d in self.docs if not all([s == [''] for s in d.sections])]
+        self.min_sent_len = min_sent_len
+        docs = [PubmedDoc(**json.loads(l)) for l in Path(self._file_path).read_text().split("\n") if l]
+        docs = [d for d in docs if not all([s == [''] for s in d.sections])]
+        if min_words or max_words:
+            docs = self._filter_doc_len(docs, min_words, max_words)
+        self.docs = docs
+
+    def _filter_doc_len(self, docs: List[PubmedDoc], min_words: int, max_words: int):
+        def f(doc: PubmedDoc):
+            l = sum([len(s.split()) for s in doc.article_text])
+            if min_words:
+                if l < min_words:
+                    return False
+            if max_words:
+                if l >= max_words:
+                    return False
+            return True
+        return list(filter(f, docs))
 
     def _get_sections(self, doc: PubmedDoc) -> List[Section]:
         if self.no_sections:
@@ -39,12 +61,13 @@ class PubmedDataset(object):
                 sn_counter[sn] -= 1
             else:
                 section_names = [sn] + section_names
-        sections = [Section(id=n, sentences=s) for n, s in zip(section_names, doc.sections) if s!=['']]
+        sentences = [[s for s in sents if len([w for w in s.split() if w.isalpha()]) >= self.min_sent_len] for sents in doc.sections]
+        sections = [Section(id=n, sentences=s) for n, s in zip(section_names, sentences) if s]
         return sections
 
     def _get_reference(self, doc: PubmedDoc) -> List[str]:
         # remove sentence tags in abstract which break rouge
-        return [s.replace("<S>", "").replace("<S\>", "") for s in doc.abstract_text]
+        return [s.replace("<S>", "").replace("<S\>", "").replace("</S>", "") for s in doc.abstract_text]
 
     def __iter__(self) -> Iterator[Document]:
         for doc in self.docs:
