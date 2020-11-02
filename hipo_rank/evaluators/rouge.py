@@ -5,7 +5,7 @@ from pathlib import Path
 from hipo_rank import Summary, Document, Reference
 from typing import List
 
-def evaluate_rouge(summaries: List[List[str]], references: List[List[List[str]]], remove_temp=True, rouge_args=[]):
+def evaluate_rouge(summaries: List[List[str]], references: List[List[List[str]]], remove_temp=True, rouge_args=None):
     '''
     Taken from original pacsum repository
 
@@ -38,8 +38,7 @@ def evaluate_rouge(summaries: List[List[str]], references: List[List[List[str]]]
         with open(os.path.join(system_dir, summary_fn), 'w') as f:
             f.write('\n'.join(summary))
 
-    args_str = ' '.join(map(str, rouge_args))
-    rouge = Rouge155(rouge_args=args_str)
+    rouge = Rouge155(rouge_args=rouge_args)
     rouge.system_dir = system_dir
     rouge.model_dir = model_dir
     rouge.system_filename_pattern = '(\d+).txt'
