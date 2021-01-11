@@ -5,6 +5,9 @@ Unsupervised and extractive long document summarization with **Hi**erarchichal a
 ## Libraries
 `pip install -r requirements.txt`
 
+## ROUGE
+`pyrouge_set_rouge_path /absolute/path/to/ROUGE-1.5.5/directory`
+
 ## Model Files
 - Biomed w2v: http://evexdb.org/pmresources/vec-space-models/wikipedia-pubmed-and-PMC-w2v.bin
 - PacSum BERT: https://drive.google.com/file/d/1wbMlLmnbD_0j7Qs8YY8cSCh935WKKdsP/view?usp=sharing
