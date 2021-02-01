@@ -1,5 +1,5 @@
 # HipoRank
-Unsupervised and extractive long document summarization with **Hi**erarchichal and **Po**sitional information.
+Unsupervised and extractive long document summarization with **Hi**erarchichal and **Po**sitional information. Contains code for [Discourse-Aware Unsupervised Summarization of Long Scientific Documents](https://arxiv.org/abs/2005.00513) accepted at EACL 2021.
 
 # Requirements
 ## Libraries
