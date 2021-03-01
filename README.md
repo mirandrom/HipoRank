@@ -5,6 +5,9 @@ Unsupervised and extractive long document summarization with **Hi**erarchichal a
 ## Libraries
 `pip install -r requirements.txt`
 
+## Datasets
+https://github.com/armancohan/long-summarization
+
 ## ROUGE
 `pyrouge_set_rouge_path /absolute/path/to/ROUGE-1.5.5/directory`
 
